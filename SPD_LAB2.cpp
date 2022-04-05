@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 
+
 class Task
 {
 public:
@@ -35,47 +36,25 @@ void display(std::vector<Task> tasks) {
     }
 }
 
-std::vector<Task> getValues(int n) {
+std::vector<Task> getValues(int index)
+{
     std::vector<Task> task;
     std::string tmp;
-    std::string find;
-
-    switch (n) {
-    case 10:
-        find = "data.10:"; break;
-    case 11:
-        find = "data.11:"; break;
-    case 12:
-        find = "data.12:"; break;
-    case 13:
-        find = "data.13:"; break;
-    case 14:
-        find = "data.14:"; break;
-    case 15:
-        find = "data.15:"; break;
-    case 16:
-        find = "data.16:"; break;
-    case 17:
-        find = "data.17:"; break;
-    case 18:
-        find = "data.18:"; break;
-    case 19:
-        find = "data.19:"; break;
-    case 20:
-        find = "data.20:"; break;
-    default:
-        break;
-    }
+    std::string find = "data." + std::to_string(index) + ":";
+    //std::cout << find << std::endl;
+    
 
     int count;
     Task tmp2;
     std::ifstream data("witi.data.txt");
 
-    while (tmp != find) {
+    while (tmp != find)
+    {
         data >> tmp;
     }
     data >> count;
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++)
+    {
         data >> tmp2.P;
         data >> tmp2.W;
         data >> tmp2.D;
@@ -86,6 +65,7 @@ std::vector<Task> getValues(int n) {
 }
 
 
+
 int K(int index, int ending, std::vector<Task> X)
 {
 	
@@ -93,15 +73,16 @@ int K(int index, int ending, std::vector<Task> X)
     return k;
 }
 
-int F(int binaryIndex, std::vector<Task> &X, std::vector<int>& Wyniki)
+std::pair<int,std::pair<int, int>> F(int binaryIndex, std::vector<Task>& X, std::vector<int>& Wyniki)
 {
 	int best = -1;
+    int bestIndex = -1;
 	int newF;
 	int n = X.size();
 	//binary = 0b0001
 
 	int ending = 0;
-
+    
 	for (int i = 0; i < n; ++i)
 	{
 		if (binaryIndex & (1 << i))
@@ -119,13 +100,24 @@ int F(int binaryIndex, std::vector<Task> &X, std::vector<int>& Wyniki)
 		{
 			newF = Wyniki[binaryIndex - (1 << i)] + K(i, ending, X);
 
-			if (best == -1)
-				best = newF;
-			else if (newF < best)
-				best = newF;
-		}
-		
+            
+
+            if (best == -1)
+            {
+                best = newF;
+                bestIndex = i;
+            }
+            else if (newF <= best)
+            {
+                best = newF;
+                bestIndex = i;
+                
+            }
+		}	
 	}
+
+    auto wynik = std::make_pair( best, std::make_pair(bestIndex, binaryIndex - (1 << bestIndex)) );
+    return wynik;
 }
 
 int main()
@@ -133,18 +125,69 @@ int main()
     
     std::vector<std::vector<Task>> tasks;
     std::vector<int> Wyniki;
-    int count = 10;
+    std::vector<int> Indeksy;
+    std::vector<int> IndeksyPoprzedniego;
+    std::vector<int> Kolejnosc;
+    
+    int start = 10;
+    int stop = 21;
+    int count = stop - start;
+    int x = start;
 
-    while(count < 21)
+    //wczytywanie danych
+    while(x <= stop)
     {
         std::vector<Task> temp;
-        temp = getValues(count);
+        temp = getValues(x);
         tasks.push_back(temp);
-        count++;
+        x++;
     }
 
-    int wynik = F(0b1111111111, tasks[0], Wyniki);
-    std::cout << Wyniki[std::pow(2,10)];
+
+    for (int k = 0; k < count; k++)
+    {
+        int taskNum = k;
+        int N = tasks[taskNum].size();
+        Wyniki.resize(std::pow(2, N));
+        Indeksy.resize(std::pow(2, N));
+        IndeksyPoprzedniego.resize(std::pow(2, N));
+        Kolejnosc.resize(N);
+
+
+        for (int i = 1; i < std::pow(2, N); i++)
+        {
+            auto x = F(i, tasks[taskNum], Wyniki);
+            Wyniki[i] = x.first;
+            Indeksy[i] = x.second.first;
+            IndeksyPoprzedniego[i] = x.second.second;
+
+        }
+        //kolejnoœæ
+        Kolejnosc[N - 1] = Indeksy[std::pow(2, N) - 1];
+        int next = IndeksyPoprzedniego[std::pow(2, N) - 1];
+
+        for (int i = 2; i <= N; i++)
+        {
+            Kolejnosc[N - i] = Indeksy[next];
+            next = IndeksyPoprzedniego[next];
+        }
+
+        int wynik = Wyniki[std::pow(2, N) - 1];
+
+        
+        std::cout << "data." << k << ":" << std::endl;
+        std::cout << wynik << std::endl;;
+        for (int i = 0; i < N; i++)
+        {
+            std::cout << Kolejnosc[i] + 1 << " ";
+        }
+        std::cout << std::endl;
+    }
+    
+
+    
+
+    
 	return 0;
 }
 
